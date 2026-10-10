@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DataLens Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-app:    #0b141a;
+      --bg-panel:  #111b21;
+      --bg-input:  #1f2c33;
+      --bg-bubble-out: #005c4b;
+      --bg-bubble-in:  #1f2c33;
+      --bg-system: rgba(17,27,33,0.85);
+      --accent:    #25d366;
+      --accent2:   #128c7e;
+      --text:      #e9edef;
+      --text2:     #8696a0;
+      --text3:     #667781;
+      --border:    #222d34;
+      --teal:      #25d366;
+      --font: 'Inter', sans-serif;
+      --font-head: 'Syne', sans-serif;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      background: var(--bg-app);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── LEFT PANEL ── */
+    .left-panel {
+      width: 340px;
+      min-width: 260px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-panel);
+      flex-shrink: 0;
+    }
+
+    .lp-header {
+      padding: 14px 18px;
+      background: var(--bg-input);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .lp-title {
+      flex: 1;
+    }
+    .lp-title h2 {
+      font-family: var(--font-head);
+      font-size: 1rem; font-weight: 800; color: var(--text);
+    }
+    .lp-title .subtitle {
+      font-size: 0.72rem; color: var(--accent);
+    }
+    .icon-btn {
+      background: none; border: none; color: var(--text2);
+      cursor: pointer; padding: 5px; border-radius: 50%;
+      font-size: 16px; transition: color 0.15s, background 0.15s;
+    }
+    .icon-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+
+    .lp-section-title {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text3); padding: 12px 18px 6px; font-weight: 600;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      margin: 0 14px 10px;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(37,211,102,0.05);
+    }
+    .upload-zone .uz-icon { font-size: 1.6rem; margin-bottom: 5px; }
+    .upload-zone .uz-text { font-size: 0.78rem; color: var(--text2); line-height: 1.4; }
+    .upload-zone .uz-types { font-size: 0.65rem; color: var(--accent); margin-top: 4px; }
+    #file-input { display: none; }
+    #upload-status {
+      margin: 0 14px 8px;
+      font-size: 0.73rem; line-height: 1.4;
+      padding: 6px 10px; border-radius: 7px;
+      display: none;
+    }
+
+    /* Dataset info */
+    #ds-info { margin: 0 14px 10px; display: none; }
+    .ds-card {
+      background: var(--bg-input); border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .ds-name {
+      font-size: 0.82rem; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+    .ds-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .ds-stat {
+      font-size: 0.67rem; padding: 2px 7px; border-radius: 4px;
+      background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.2);
+      color: var(--accent);
+    }
+    .col-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .col-chip {
+      font-size: 0.62rem; padding: 2px 6px; border-radius: 3px;
+      border: 1px solid var(--border); color: var(--text3);
+    }
+    .col-chip.num { border-color: rgba(37,211,102,0.3); color: var(--accent); }
+    .col-chip.cat { border-color: rgba(134,150,160,0.3); color: var(--text2); }
+
+    /* Suggestions */
+    #sug-section { display: none; flex: 1; overflow-y: auto; }
+    .sug-list { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 5px; }
+    .sug-btn {
+      width: 100%; text-align: left;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 12px;
+      color: var(--text2); font-size: 0.77rem;
+      font-family: var(--font); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      line-height: 1.4;
+    }
+    .sug-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(37,211,102,0.06);
+    }
+
+    /* ── RIGHT / CHAT ── */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-app);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Chat wallpaper subtle pattern */
+    .chat-panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(37,211,102,0.02) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+
+    /* Chat header */
+    .chat-header {
+      padding: 10px 20px;
+      background: var(--bg-input);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      z-index: 10; flex-shrink: 0;
+    }
+    .chat-header .avatar { width: 38px; height: 38px; font-size: 16px; }
+    .chat-header-info h3 {
+      font-size: 0.9rem; font-weight: 600; color: var(--text);
+    }
+    .chat-header-info .online {
+      font-size: 0.7rem; color: var(--accent);
+    }
+    .chat-header-actions { margin-left: auto; display: flex; gap: 4px; }
+
+    /* Messages area */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Scrollbar */
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── MESSAGE BUBBLES ── */
+    .msg-row {
+      display: flex;
+      margin-bottom: 2px;
+    }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.bot  { justify-content: flex-start; }
+
+    .bubble {
+      max-width: 72%;
+      border-radius: 8px;
+      padding: 8px 12px;
+      position: relative;
+      line-height: 1.5;
+      word-break: break-word;
+      animation: popIn 0.18s ease;
+    }
+    @keyframes popIn {
+      from { opacity:0; transform: scale(0.95) translateY(4px); }
+      to   { opacity:1; transform: scale(1) translateY(0); }
+    }
+
+    .bubble.user {
+      background: var(--bg-bubble-out);
+      border-bottom-right-radius: 2px;
+      color: #e9edef;
+    }
+    .bubble.bot {
+      background: var(--bg-bubble-in);
+      border-bottom-left-radius: 2px;
+      color: var(--text);
+    }
+
+    /* Tails */
+    .bubble.user::after {
+      content: '';
+      position: absolute; right: -7px; bottom: 0;
+      border: 7px solid transparent;
+      border-left-color: var(--bg-bubble-out);
+      border-bottom: 0; border-right: 0;
+    }
+    .bubble.bot::after {
+      content: '';
+      position: absolute; left: -7px; bottom: 0;
+      border: 7px solid transparent;
+      border-right-color: var(--bg-bubble-in);
+      border-bottom: 0; border-left: 0;
+    }
+
+    .bubble .msg-text { font-size: 0.875rem; }
+    .bubble .msg-time {
+      font-size: 0.62rem; color: rgba(134,150,160,0.9);
+      text-align: right; margin-top: 3px;
+      display: flex; justify-content: flex-end; align-items: center; gap: 3px;
+    }
+    .bubble.user .msg-time { color: rgba(200,230,220,0.7); }
+    .tick { font-size: 10px; color: #53bdeb; }
+
+    /* Analysis badge inside bubble */
+    .analysis-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.62rem; padding: 2px 7px; border-radius: 10px;
+      margin-bottom: 6px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Result card inside bubble */
+    .result-card {
+      margin-top: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .result-card-header {
+      padding: 7px 12px;
+      font-size: 0.7rem; color: var(--text2);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .table-wrap {
+      overflow-x: auto; max-height: 200px; overflow-y: auto;
+    }
+    .table-wrap::-webkit-scrollbar { height: 3px; width: 3px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+
+    table.result-table {
+      width: 100%; border-collapse: collapse; font-size: 0.72rem;
+    }
+    .result-table th {
+      background: rgba(37,211,102,0.08);
+      color: var(--accent); padding: 6px 10px;
+      text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05);
+      white-space: nowrap; font-size: 0.65rem; text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .result-table td {
+      padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--text); white-space: nowrap;
+    }
+    .result-table tr:last-child td { border-bottom: none; }
+    .result-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Chart inside bubble */
+    .chart-wrap {
+      margin-top: 8px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 8px; padding: 10px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .chart-title {
+      font-size: 0.68rem; color: var(--text2); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .chart-canvas-wrap { height: 180px; }
+
+    /* System message */
+    .system-msg {
+      text-align: center; padding: 6px 0;
+    }
+    .system-msg span {
+      background: var(--bg-system);
+      border: 1px solid var(--border);
+      color: var(--text3); font-size: 0.7rem;
+      padding: 4px 12px; border-radius: 8px;
+      backdrop-filter: blur(8px);
+    }
+
+    /* Typing indicator */
+    .typing-bubble {
+      display: flex; align-items: center; gap: 4px;
+      padding: 10px 14px;
+    }
+    .typing-bubble span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text3); display: inline-block;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%,60%,100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+
+    /* ── INPUT BAR ── */
+    .input-bar {
+      padding: 10px 16px;
+      background: var(--bg-input);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: flex-end; gap: 10px;
+      z-index: 10; flex-shrink: 0;
+    }
+    .input-wrap {
+      flex: 1;
+      background: var(--bg-panel);
+      border-radius: 24px;
+      padding: 10px 16px;
+      display: flex; align-items: flex-end; gap: 8px;
+      border: 1px solid var(--border);
+    }
+    #msg-input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: var(--font); font-size: 0.9rem;
+      resize: none; max-height: 120px; line-height: 1.5;
+    }
+    #msg-input::placeholder { color: var(--text3); }
+    .attach-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 0; }
+    .send-btn {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: var(--accent); border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      box-shadow: 0 2px 12px rgba(37,211,102,0.3);
+    }
+    .send-btn:hover { background: #20bc59; transform: scale(1.05); }
+    .send-btn:active { transform: scale(0.96); }
+    .send-btn:disabled { background: var(--border); box-shadow: none; cursor: not-allowed; transform: none; }
+
+    /* ── EMPTY STATE ── */
+    .empty-chat {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; color: var(--text3);
+      text-align: center; padding: 40px 20px;
+    }
+    .empty-chat .ec-icon { font-size: 3rem; opacity: 0.5; }
+    .empty-chat h3 { font-family: var(--font-head); font-size: 1.1rem; color: var(--text2); }
+    .empty-chat p { font-size: 0.82rem; max-width: 300px; line-height: 1.5; }
+
+    /* Analysis type color map */
+    .at-descriptive { background: rgba(37,211,102,0.12); color: #25d366; }
+    .at-trend       { background: rgba(91,255,216,0.12); color: #5bffd8; }
+    .at-comparative { background: rgba(251,191,36,0.12); color: #fbbf24; }
+    .at-ranking     { background: rgba(248,113,113,0.12); color: #f87171; }
+    .at-distribution{ background: rgba(52,211,153,0.12); color: #34d399; }
+    .at-correlation { background: rgba(96,165,250,0.12); color: #60a5fa; }
+    .at-anomaly     { background: rgba(251,146,60,0.12); color: #fb923c; }
+    .at-pattern     { background: rgba(232,121,249,0.12); color: #e879f9; }
+    .at-forecast    { background: rgba(56,189,248,0.12); color: #38bdf8; }
+
+    /* Emoji map */
+    .at-descriptive::before { content: '📊 '; }
+    .at-trend::before       { content: '📈 '; }
+    .at-comparative::before { content: '⚖️ '; }
+    .at-ranking::before     { content: '🏆 '; }
+    .at-distribution::before{ content: '📉 '; }
+    .at-correlation::before { content: '🔗 '; }
+    .at-anomaly::before     { content: '⚠️ '; }
+    .at-pattern::before     { content: '🔄 '; }
+    .at-forecast::before    { content: '🔮 '; }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .left-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LEFT PANEL ── -->
+<div class="left-panel">
+  <div class="lp-header">
+    <div class="avatar">🔬</div>
+    <div class="lp-title">
+      <h2>InsightForge</h2>
+      <div class="subtitle">Prompt based Data Explorer</div>
+    </div>
+    <button class="icon-btn" onclick="clearChat()" title="Clear chat">🗑️</button>
+  </div>
+
+  <!-- Upload -->
+  <div class="lp-section-title">📂 Your Dataset</div>
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div class="uz-icon">📤</div>
+    <div class="uz-text">Drop CSV or Excel here<br>or tap to upload</div>
+    <div class="uz-types">CSV · XLSX · XLS</div>
+  </div>
+  <input type="file" id="file-input" accept=".csv,.xlsx,.xls"/>
+  <div id="upload-status"></div>
+
+  <!-- Dataset card -->
+  <div id="ds-info">
+    <div class="ds-card">
+      <div class="ds-name" id="ds-name">—</div>
+      <div class="ds-stats" id="ds-stats"></div>
+      <div class="col-chips" id="col-chips"></div>
+    </div>
+  </div>
+
+  <!-- Suggestions -->
+  <div id="sug-section">
+    <div class="lp-section-title">💡 Ask me about...</div>
+    <div class="sug-list" id="sug-list"></div>
+  </div>
+</div>
+
+<!-- ── CHAT PANEL ── -->
+<div class="chat-panel">
+
+  <!-- Chat header -->
+  <div class="chat-header">
+    <div class="avatar">🤖</div>
+    <div class="chat-header-info">
+      <h3>Data Analyst</h3>
+      <div class="online" id="online-status">Upload a dataset to start</div>
+    </div>
+    <div class="chat-header-actions">
+      <button class="icon-btn" onclick="clearChat()" title="Clear conversation">🗑️</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="messages">
+    <div class="empty-chat" id="empty-state">
+      <div class="ec-icon">💬</div>
+      <h3>ASK YOUR DATA ANYTHING! 👋</h3>
+      <p>Upload your CSV or Excel file on the left, then ask me anything about your data — just like texting a friend.</p>
+    </div>
+  </div>
+
+  <!-- Input bar -->
+  <div class="input-bar">
+    <div class="input-wrap">
+      <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Upload dataset">📎</button>
+      <textarea id="msg-input" rows="1" placeholder="Ask anything about your data…"></textarea>
+    </div>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled title="Send (Enter)">➤</button>
+  </div>
+
+</div>
+
+<script>
+// ── State ──
+let datasetLoaded = false;
+let chartInstances = {};
+let chartCounter = 0;
+let messageCount = 0;
+
+// ── Upload ──
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+});
+
+function uploadFile(file) {
+  const status = document.getElementById('upload-status');
+  status.style.display = 'block';
+  status.style.cssText = 'display:block;background:rgba(37,211,102,0.08);color:#8696a0;padding:6px 14px;border-radius:6px;font-size:0.73rem;margin:0 14px 8px;';
+  status.textContent = `⏳ Loading ${file.name}…`;
+
+  const form = new FormData();
+  form.append('file', file);
+
+  fetch('/upload', { method: 'POST', body: form })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        status.style.color = '#f87171';
+        status.textContent = `❌ ${data.error}`;
+        return;
+      }
+      status.style.color = '#25d366';
+      status.textContent = `✅ ${file.name} ready`;
+
+      datasetLoaded = true;
+      renderDatasetInfo(data.summary);
+      loadSuggestions();
+
+      document.getElementById('send-btn').disabled = false;
+      document.getElementById('online-status').textContent = `Analysing: ${data.summary.filename}`;
+      document.getElementById('msg-input').placeholder = 'Ask anything about your data…';
+
+      // System message in chat
+      addSystemMessage(`📂 ${data.summary.filename} loaded — ${data.summary.rows.toLocaleString()} rows, ${data.summary.columns} columns`);
+
+      // Bot greeting
+      const greeting = `Hey! I've loaded your dataset "${data.summary.filename}" with ${data.summary.rows.toLocaleString()} rows and ${data.summary.columns} columns 🎉 What would you like to explore? You can ask me anything — totals, trends, top performers, anomalies, forecasts… just ask naturally!`;
+      addBotMessage(greeting, null, null, null);
+    })
+    .catch(e => {
+      status.style.color = '#f87171';
+      status.textContent = `❌ Upload failed`;
+    });
+}
+
+function renderDatasetInfo(s) {
+  document.getElementById('ds-info').style.display = 'block';
+  document.getElementById('ds-name').textContent = s.filename;
+
+  document.getElementById('ds-stats').innerHTML = `
+    <span class="ds-stat">${s.rows.toLocaleString()} rows</span>
+    <span class="ds-stat">${s.columns} cols</span>
+    <span class="ds-stat">${s.numeric_cols.length} numeric</span>
+  `;
+
+  document.getElementById('col-chips').innerHTML = s.column_list.map(col => {
+    const cls = s.numeric_cols.includes(col) ? 'num' : 'cat';
+    return `<span class="col-chip ${cls}">${col}</span>`;
+  }).join('');
+}
+
+function loadSuggestions() {
+  fetch('/suggest').then(r => r.json()).then(data => {
+    const sec = document.getElementById('sug-section');
+    const list = document.getElementById('sug-list');
+    sec.style.display = 'block';
+    list.innerHTML = data.suggestions.map(s =>
+      `<button class="sug-btn" onclick="fillAndSend(${JSON.stringify(s)})">💬 ${s}</button>`
+    ).join('');
+  });
+}
+
+function fillAndSend(text) {
+  document.getElementById('msg-input').value = text;
+  sendMessage();
+}
+
+// ── Chat ──
+const input = document.getElementById('msg-input');
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+
+async function sendMessage() {
+  if (!datasetLoaded) {
+    addSystemMessage('Please upload a dataset first 📂');
+    return;
+  }
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Hide empty state
+  document.getElementById('empty-state')?.remove();
+
+  // Add user bubble
+  addUserMessage(text);
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Show typing
+  const typingId = addTypingIndicator();
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    removeTypingIndicator(typingId);
+
+    if (data.error) {
+      addBotMessage(data.error, null, null, null);
+    } else {
+      addBotMessage(data.reply, data.result_html, data.chart, data.analysis_type);
+    }
+  } catch(e) {
+    removeTypingIndicator(typingId);
+    addBotMessage("Sorry, something went wrong. Please try again 🙏", null, null, null);
+  } finally {
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+// ── Message builders ──
+function getTime() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function addUserMessage(text) {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `
+    <div class="bubble user">
+      <div class="msg-text">${escapeHtml(text)}</div>
+      <div class="msg-time">${getTime()} <span class="tick">✓✓</span></div>
+    </div>`;
+  msgs.appendChild(row);
+  scrollToBottom();
+}
+
+function addBotMessage(text, tableHtml, chart, analysisType) {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row bot';
+
+  const chartId = chart ? `chart-${++chartCounter}` : null;
+
+  let badgeHtml = '';
+  if (analysisType) {
+    badgeHtml = `<div class="analysis-badge at-${analysisType}">${analysisType.replace(/_/g,' ').toUpperCase()}</div>`;
+  }
+
+  let tableSection = '';
+  if (tableHtml) {
+    tableSection = `
+      <div class="result-card">
+        <div class="result-card-header">
+          <span>📋 Query Results</span>
+        </div>
+        <div class="table-wrap">${tableHtml}</div>
+      </div>`;
+  }
+
+  let chartSection = '';
+  if (chart && chartId) {
+    chartSection = `
+      <div class="chart-wrap">
+        <div class="chart-title">📈 ${chart.title}</div>
+        <div class="chart-canvas-wrap">
+          <canvas id="${chartId}"></canvas>
+        </div>
+      </div>`;
+  }
+
+  row.innerHTML = `
+    <div class="bubble bot">
+      ${badgeHtml}
+      <div class="msg-text">${escapeHtml(text)}</div>
+      ${tableSection}
+      ${chartSection}
+      <div class="msg-time">${getTime()}</div>
+    </div>`;
+
+  msgs.appendChild(row);
+
+  // Render chart after DOM insertion
+  if (chart && chartId) {
+    setTimeout(() => renderChart(chartId, chart), 50);
+  }
+
+  scrollToBottom();
+}
+
+function addSystemMessage(text) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'system-msg';
+  div.innerHTML = `<span>${text}</span>`;
+  msgs.appendChild(div);
+  scrollToBottom();
+}
+
+function addTypingIndicator() {
+  const msgs = document.getElementById('messages');
+  const id = `typing-${Date.now()}`;
+  const row = document.createElement('div');
+  row.className = 'msg-row bot';
+  row.id = id;
+  row.innerHTML = `
+    <div class="bubble bot typing-bubble">
+      <span></span><span></span><span></span>
+    </div>`;
+  msgs.appendChild(row);
+  scrollToBottom();
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  document.getElementById(id)?.remove();
+}
+
+function scrollToBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Chart renderer ──
+function renderChart(canvasId, cfg) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  // Destroy previous instance for same canvas
+  if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+  Chart.defaults.color = '#8696a0';
+  Chart.defaults.borderColor = '#1f2c33';
+
+  chartInstances[canvasId] = new Chart(canvas.getContext('2d'), {
+    type: cfg.type,
+    data: { labels: cfg.labels, datasets: cfg.datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: cfg.indexAxis || 'x',
+      plugins: {
+        legend: {
+          labels: {
+            color: '#8696a0',
+            font: { family: "'Inter', sans-serif", size: 10 },
+            boxWidth: 10,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0b141a',
+          borderColor: '#222d34', borderWidth: 1,
+          titleColor: '#e9edef', bodyColor: '#8696a0',
+          padding: 8,
+        }
+      },
+      scales: cfg.type === 'scatter' ? {
+        x: { grid: { color: '#1a2328' }, ticks: { color: '#8696a0', font: { size: 9 } } },
+        y: { grid: { color: '#1a2328' }, ticks: { color: '#8696a0', font: { size: 9 } } },
+      } : {
+        x: { grid: { color: '#1a2328' }, ticks: { color: '#8696a0', maxRotation: 35, font: { size: 9 } } },
+        y: { grid: { color: '#1a2328' }, ticks: { color: '#8696a0', font: { size: 9 } } },
+      },
+    }
+  });
+}
+
+// ── Clear chat ──
+function clearChat() {
+  fetch('/clear', { method: 'POST' });
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = `
+    <div class="empty-chat" id="empty-state">
+      <div class="ec-icon">💬</div>
+      <h3>Chat cleared 🧹</h3>
+      <p>Ask me anything about your dataset!</p>
+    </div>`;
+  Object.values(chartInstances).forEach(c => c.destroy());
+  chartInstances = {};
+}
+</script>
+</body>
+</html>

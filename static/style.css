@@ -1,0 +1,180 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Inter',sans-serif;
+background:linear-gradient(135deg,#eef2ff,#f9fafb);
+min-height:100vh;
+display:flex;
+justify-content:center;
+align-items:flex-start;
+padding:40px;
+}
+
+/* Main container */
+
+.container{
+width:100%;
+max-width:900px;
+}
+
+/* Header */
+
+header{
+text-align:center;
+margin-bottom:40px;
+}
+
+h1{
+font-size:38px;
+color:#1e293b;
+font-weight:600;
+}
+
+header p{
+color:#64748b;
+margin-top:8px;
+}
+
+/* Card */
+
+.card{
+background:white;
+padding:30px;
+border-radius:14px;
+box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+/* Upload section */
+
+.upload-section{
+margin-bottom:20px;
+}
+
+.upload-box{
+display:block;
+border:2px dashed #cbd5f5;
+padding:40px;
+text-align:center;
+border-radius:12px;
+background:#f8fafc;
+cursor:pointer;
+transition:0.3s;
+}
+
+.upload-box:hover{
+border-color:#6366f1;
+background:#eef2ff;
+}
+
+.upload-box input{
+display:none;
+}
+
+.upload-box span{
+color:#475569;
+font-size:15px;
+}
+
+/* Prompt input */
+
+.prompt-section{
+display:flex;
+gap:10px;
+}
+
+input{
+flex:1;
+padding:14px;
+border-radius:8px;
+border:1px solid #d1d5db;
+font-size:16px;
+}
+
+input:focus{
+outline:none;
+border-color:#6366f1;
+box-shadow:0 0 0 3px rgba(99,102,241,0.2);
+}
+
+/* Button */
+
+button{
+padding:14px 20px;
+border:none;
+background:#6366f1;
+color:white;
+border-radius:8px;
+font-size:15px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+background:#4f46e5;
+transform:translateY(-1px);
+}
+
+/* Result card */
+
+.result-card{
+margin-top:35px;
+background:white;
+padding:30px;
+border-radius:14px;
+box-shadow:0 10px 25px rgba(0,0,0,0.07);
+}
+
+.result-card h2{
+margin-bottom:15px;
+color:#1e293b;
+}
+
+/* Result content */
+
+.result-content{
+line-height:1.6;
+font-size:15px;
+color:#374151;
+}
+
+/* Table styling */
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:15px;
+}
+
+th{
+background:#6366f1;
+color:white;
+font-weight:500;
+}
+
+th,td{
+padding:12px;
+border-bottom:1px solid #e5e7eb;
+text-align:left;
+}
+
+tr:hover{
+background:#f8fafc;
+}
+
+/* Responsive */
+
+@media(max-width:700px){
+
+.prompt-section{
+flex-direction:column;
+}
+
+button{
+width:100%;
+}
+
+}

@@ -1,0 +1,11 @@
+Product,Region,Sales,Year,Category
+Laptop,South,500,2024,Electronics
+Phone,North,300,2024,Electronics
+Tablet,West,200,2023,Electronics
+Laptop,North,450,2024,Electronics
+Phone,South,350,2023,Electronics
+Tablet,South,250,2024,Electronics
+Laptop,West,400,2023,Electronics
+Phone,East,280,2024,Electronics
+Tablet,North,220,2023,Electronics
+Laptop,East,370,2024,Electronics

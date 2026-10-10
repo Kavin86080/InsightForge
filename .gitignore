@@ -1,0 +1,22 @@
+# Python virtual environments
+venv/
+env/
+ENV/
+.env
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Uploads / user generated files
+uploads/*
+!uploads/.gitkeep
+
+# Operating system files
+Thumbs.db
+.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
